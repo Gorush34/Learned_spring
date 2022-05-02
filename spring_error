@@ -1,0 +1,6 @@
+22/5/2
+
+매퍼에서 매핑이 안될때
+- 오라클에서 직접 DB를 insert한 후에 안잡히는 경우 반드시 commit을 해라!
+- commit 안할시 안잡힘
+- 그 외에는 컬럼명, 변수명 일치하는지 mapper에 들어가는 namespace와 id 및 resultType, parameterType 일치하는지
