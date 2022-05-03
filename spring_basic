@@ -134,4 +134,52 @@ Service(서비스)단 객체가 하는 일은 Model단에서 작성된 데이터
 		
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
+	AOP 
+
+Pointcut
+
+@Pointcut("execution(public * com.spring..*Controller.requiredLogin_*(..) )")
+	public void requiredLogin() {}
 	
+
+1) com.spring : context.xml 가보면 fullbeangenerator에서 bean으로 만들기 위한 조건이 com.spring.* 이었기 때문에
+2) spring..<- ..은 뒤에 무엇이, 몇개가 오던 받기 위해
+
+requiredLogin()은 (public * com.spring..*Controller.requiredLogin_*(..) ) 양식에 속한 메소드들을 나타낸다.
+
+
+Pointcut(주업무) 가 일어나기 전 일어나는 업무를 Befor Advice(공통관심사, 보조업무)라고 한다.
+
+@Before("requiredLogin()") // 이 보조업무는 괄호 안의 주업무가 일어나기 전에 하는 보조업무이다.
+public void loginCheck(JoinPoint joinpoint) { // 로그인 유무 검사를 하는 메소드 작성하기
+		// JoinPoint joinpoint 는 포인트컷 되어진 주업무의 메소드이다. ex)BoardController 안의 requiredLogin_add 메소드
+
+	// 로그인 유무를 확인하기 위해서는 request를 통해 session 을 얻어와야 한다.
+	HttpServletRequest request = (HttpServletRequest) joinpoint.getArgs()[0]; // 주업무 메소드의 첫번쨰 파라미터를 얻어오는 것이다.
+	HttpServletResponse response = (HttpServletResponse) joinpoint.getArgs()[1]; // 주업무 메소드의 두번쨰 파라미터를 얻어오는 것이다.
+	// *** 보조업무를 쓰기 위해서는 반드시 형식을 맞춰줘야함!!!!(파라미터 순서 및 메소드 이름) 	
+
+	HttpSession session = request.getSession();
+	if(session.getAttribute("loginuser") == null ) {
+		String message = "먼저 로그인 하세요~~~";
+		String loc = request.getContextPath()+"/login.action";
+			
+		request.setAttribute("message", message);
+		request.setAttribute("loc", loc);
+			
+		//  >>> 로그인 성공 후 로그인 하기전 페이지로 돌아가는 작업 만들기 <<< //
+ 		// === 현재 페이지의 주소(URL) 알아오기 === // 
+		String url = MyUtil.getCurrentURL(request);
+		session.setAttribute("goBackURL", url); // 세션에 rul 정보를 저장시켜둔다.
+			
+		RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/views/msg.jsp");
+		// dispatcher 를 하면 forward를 해줘야함(forward에는 request, response 필요) 
+		try { 
+			dispatcher.forward(request, response);
+		} catch (ServletException | IOException e) {
+			e.printStackTrace();
+		}
+			
+	}
+		
+} // end of public void loginCheck(JoinPoint joinpoint)------------
