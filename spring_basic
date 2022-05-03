@@ -58,5 +58,80 @@ Service(서비스)단 객체가 하는 일은 Model단에서 작성된 데이터
 	3. tile-layout경로 및 내용 확인
     
     순서를 잘 기억하자.
-    컨트롤러 --> 서비스 --> DAO --> 서비스 --> 컨트롤러
+    컨트롤러 --> 서비스 --> DAO --> DB --> DAO --> 서비스 --> 컨트롤러
     
+    
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    22/5/3
+    로그아웃시 현재 페이지로 지정 순서
+    
+    // === 로그인 또는 로그아웃을 했을 때 현재 보이던 그 페이지로 그대로 돌아가기 위한 메소드 생성 === //
+	public void getCurrentURL(HttpServletRequest request) {
+		HttpSession session = request.getSession();
+		session.setAttribute("goBackURL", MyUtil.getCurrentURL(request));
+	}
+
+	세션을 생성 한 뒤에
+	세션에 MyUtil 에 있는 함수를 불러온다.
+
+	// *** ? 다음의 데이터까지 포함한 현재 URL 주소를 알려주는 메소드를 생성 *** //
+	public static String getCurrentURL(HttpServletRequest request) {
+
+		// 만약에 웹브라우저 주소입력란에 아래와 같이 입력되었더라면..
+		// http://localhost:9090/MyMVC/member/memberList.up?currentShowPageNo=5&sizePerPage=10&searchType=name&searchWord=%EC%9C%A0
+
+
+		String currentURL = request.getRequestURL().toString();
+		// http://localhost:9090/MyMVC/member/memberList.up
+
+		String queryString = request.getQueryString();
+		// currentShowPageNo=5&sizePerPage=10&searchType=name&searchWord=%EC%9C%A0 (GET 방식일 경우)
+
+		if(queryString != null) { // GET 방식일 경우
+			currentURL += "?" + queryString;
+			// http://localhost:9090/MyMVC/member/memberList.up?currentShowPageNo=5&sizePerPage=10&searchType=name&searchWord=%EC%9C%A0
+			// 검색조건을 달아준다!
+		}
+
+		String ctxPath = request.getContextPath();
+		//   /MyMVC
+		//  ctxPath 이후 주소입력하기 위해 알아옴
+		int beginIndex = currentURL.indexOf(ctxPath) + ctxPath.length();
+		// currentURL 에서 ctxPath 가 처음으로 나타나는 시작값 + ctxPath의 길이 => beginIndex
+		// ctxPath 이후의 값을 받아오기 위해 시작점을 받아오는 변수 beginIndex 생성
+
+		currentURL = currentURL.substring(beginIndex);
+		// /member/memberList.up?currentShowPageNo=5&sizePerPage=10&searchType=name&searchWord=%EC%9C%A0
+		// beginIndex를 이용하여 currentURL에 ctxPath 이후의 주소를 다시 저장해준다.
+
+		return currentURL;
+	}
+
+	3. 세션에 위의 메소드를 실행해서 현재 URL을 받아옴
+
+	// 로그아웃시 현재 보았던 페이지로 돌아가는 것임
+		HttpSession session = request.getSession();
+		// 세션 정의	
+		String goBackURL = (String) session.getAttribute("goBackURL");
+		// 세션에 담아두었던 attribute 담아줌(키값이 goBackURL이고 value가 MyUtil.getCurrentURL(request) 인 것)
+		session.invalidate();
+
+		String message = "로그아웃 되었습니다.";
+
+		String loc = "";
+		if(goBackURL != null) {
+			loc = request.getContextPath()+goBackURL;
+		}
+		else {
+			loc = request.getContextPath()+"/login.bts";
+		}
+		mav.addObject("message", message);
+		mav.addObject("loc", loc);
+		mav.setViewName("msg");
+		// 
+
+		return mav;
+		
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	
+	
